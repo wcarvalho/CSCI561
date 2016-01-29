@@ -1,1 +1,0 @@
-### Projects for CSCI 561: Artificial Intelligence
