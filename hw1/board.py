@@ -48,6 +48,7 @@ class Board(object):
     return state 
 
   def setState(self, state):
+    state=str(state)
     for i in range(len(state)):
       row = i/self.boardWidth
       column = i%self.boardWidth

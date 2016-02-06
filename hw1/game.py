@@ -80,7 +80,9 @@ class Game(object):
         print(self.currentPlayer().printTaken())
         print(self.otherPlayer().printTaken())
         print('')
-    
+
+  def nextTurn(self): self.turn = self.turn+1
+  def setTurn(self, turn): self.turn = turn
 
   def sampleMove(self, position):
     # self.printCurrent()
@@ -96,3 +98,5 @@ class Game(object):
     self.board.setState(state)
     for player in self.players:
       player.readBoard()
+
+  def done(self): return len(self.board.openPositions) == 0
