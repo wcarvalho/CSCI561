@@ -1,6 +1,8 @@
 from game import *
 from MyPriorityQueue import *
 
+INFINITY = 1e10
+
 class AI(object):
   def __init__(self, data, aglorithm, verbosity):
     self.game = Game(data)
@@ -31,35 +33,9 @@ class AI(object):
     
     return states
 
-  # def bestFirst(self, state, depth=1):
-  #   frontier = PriorityQueue()
-  #   explored = set()
-    
-  #   start = Node(state)
-  #   frontier.put(start)
-
-  #   self.game.board.printBoard()
-  #   for i in range(depth):
-  #     if(frontier.empty()): return None
-
-  #     next = frontier.get()
-  #     explored.add(next)
-  #     children = self.expand(next)
-  #     children.sort(key = lambda x: -x.value)
-  #     best = children[0]
-  #     self.game.setState(best)
-  #     self.game.board.printBoard()
-  #     best.printState()
-
-  #     # print(next.getState(), "->", best.getState())
-  #     inExplored = best.state in explored
-  #     inFrontier = frontier.has(best)
-  #     if (not inExplored and not inFrontier):
-  #       frontier.put(best)
-  #     elif(inFrontier): frontier.update(best)
-  #     self.game.nextTurn()
-    
-  #   self.game.setState(start)
+  def terminal(self, test):
+    self.game.setState(test)
+    return self.game.done()
 
   def bestFirst(self, state, depth=1):
     frontier = PriorityQueue()
@@ -78,15 +54,13 @@ class AI(object):
 
       # test that game is over
       best = frontier.peek()
-      self.game.setState(best)
-      if (self.game.done()): return best
+      if (self.terminal(best)): return best
 
       for node in nodesAtLevel:
         frontier.remove(node)
         if (self.verbosity > 1): node.printState("removed")
 
         explored.add(node)
-        self.game.setState(node)
         children = self.expand(node)
 
         for child in children:
@@ -149,63 +123,120 @@ class AI(object):
 
       self.game.nextTurn()
 
+  def childComparison(self, max, node, child):
+    if (max): 
+      if (child.value > node.value): node.value = child.value
+    else: 
+      if (child.value < node.value): node.value = child.value
 
-  def minmax(self):
-    pass
+  def bestChild(self, node, traversal, maxDepth, depth):
+    self.game.turn = depth % 2
+    if (maxDepth == depth):
+      self.addToMinTraversal(traversal, node)
+      return node.value
+    
+    node.value = -INFINITY
+    node.depth = depth
+    max = (depth % 2) == 0
+    children = self.expand(node)
+    # if you're at node right before the leaves, return min/max or child
+    end = (depth + 1 == maxDepth) or self.terminal(children[0])
+    if (end):
+      for child in children:
+        child.depth = depth + 1
+        self.game.turn = (depth % 2) + 1
+        self.addToMinTraversal(traversal, node)
+        if (node.value == -INFINITY): node.value = child.value
+        else: self.childComparison(max, node, child)
+        self.addToMinTraversal(traversal, child)
+      return node.value
 
-  def prune(self):
-    pass
+    # if you're at an earlier node, you find the best child value
+    for child in children:
+      self.addToMinTraversal(traversal, node)
+      self.game.turn = (depth % 2) + 1
+      child.value = self.bestChild(child, traversal, maxDepth, depth + 1)
+      self.childComparison(max, node, child)
+      self.addToMinTraversal(traversal, child)
+
+    return node.value
+
+  def addToMinTraversal(self, traversal, node):
+    traversal.append(type(node)(node, node.value, node.position, node.depth))
+
+  def addToPruneTraversal(self, traversal, node, alpha, beta):
+    traversal.append(type(node)(node, node.value, node.position, node.depth), alpha, beta)
+
+  def minimax(self, state, maxDepth=1):
+    if (maxDepth == 0): return Node(state)
+    traversal = []
+
+    start = Node(state)
+    self.addToMinTraversal(traversal, start)
+    max = True
+
+    children = self.expand(start)
+    for child in children:
+      child.value = self.bestChild(child, traversal, maxDepth, 1)
+      self.childComparison(max, start, child)
+      self.addToMinTraversal(traversal, child)
+
+    self.addToMinTraversal(traversal, start)
+ 
+    return sorted(children, key = lambda x: -x.value)[0], traversal
+
+  def pruneExplore(self, node, traversal, alpha, beta maxDepth, depth):
+    self.game.turn = depth % 2
+    if (maxDepth == depth):
+      self.addToMinTraversal(traversal, node)
+      return node.value
+    
+    node.value = -INFINITY
+    node.depth = depth
+    max = (depth % 2) == 0
+    children = self.expand(node)
+    # if you're at node right before the leaves, return min/max or child
+    end = (depth + 1 == maxDepth) or self.terminal(children[0])
+    if (end):
+      for child in children:
+        child.depth = depth + 1
+        self.game.turn = (depth % 2) + 1
+        self.addToMinTraversal(traversal, node)
+        if (node.value == -INFINITY): node.value = child.value
+        else: self.childComparison(max, node, child)
+        self.addToMinTraversal(traversal, child)
+      return node.value
+
+    # if you're at an earlier node, you find the best child value
+    for child in children:
+      self.addToMinTraversal(traversal, node)
+      self.game.turn = (depth % 2) + 1
+      child.value = self.bestChild(child, traversal, maxDepth, depth + 1)
+      self.childComparison(max, node, child)
+      self.addToMinTraversal(traversal, child)
+
+    return node.value
+  def prune(self, state, maxDepth=1):
+    if (maxDepth == 0): return Node(state)
+    traversal = []
+
+    start = Node(state)
+    alpha = -INFINITY
+    INFINITY
+    self.addToMinTraversal(traversal, start, alpha, beta)
+    max = True
+
+    children = self.expand(start)
+    for child in children:
+
 
   def simulate(self):
     game = self.game
     startingTurn = game.turn
+    self.maxDepth = 3
+    # best, traversal = self.minimax(game.getState(),self.maxDepth)
+    # best = self.bestFirst(game.getState(),self.maxDepth)
 
-    self.maxDepth = 5
-    # self.uniformcost(game.getState(),self.maxDepth)
-    # for i in range(self.maxDepth):
-    best = self.bestFirst(game.getState(),10)
-    print('')
-    printPath(best)
-      # best.printState()
-    
-    # p = PriorityQueue()
-    # p.put(Node("you", 10))
-    # p.put(Node("hey", 3))
-    # p.put(Node("your", 6))
-    # p.printQueue()
-
-    # p.update(Node("hey", 7))
-    # print(p.get())
-    # print(p.get())
-    # print(p.get())
-    # p.printQueue()
-    
-
-    # print(p.getList())
-    # p.put((-11, "there"))
-
-    # print(p.get()[1])
-
-    # p.remove(Node("hey"))
-    # p.printQueue()
-    # currentState = State(game.getState())
-    # best = self.dfsExpand(currentState)
-
-    # for elem in list(self.open.queue):
-    #   print(elem)
-
-    # print(currentState)
-    # self.explored.add(starting)
-    # self.open.remove()
-    # for x in xrange(0,8):
-    #   pass
-      # self.greedy()
-      # best = 
-      # if (self.verbosity > 0): best.printState("chosen:")
-      # game.move(best.position)
-      # game.printCurrent(self.verbosity)
-      
-
-        # game.printCurrent()
-    # bestState.printState()
-    # starting.printState()
+    # for i in traversal:
+      # print(i.position, i.depth, i.value)
+    # printPath(best)

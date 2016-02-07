@@ -1,4 +1,5 @@
 import Queue
+INFINITY = 1e10
 
 def printPath(node):
   q = Queue.LifoQueue()
@@ -11,7 +12,7 @@ def printPath(node):
     q.get().printState("\t")
 
 class Node(object):
-  def __init__(self, state, value=0, position=(-1,-1), depth=0):
+  def __init__(self, state, value=-INFINITY, position=(-1,-1), depth=0):
     self.state = state
     self.position = position
     self.value = value
@@ -64,9 +65,19 @@ class PriorityQueue(Queue.PriorityQueue, object):
         if (i[1].state == element): return True
     return False
 
+  def valueOf(self, element):
+    for i in self.queue:
+      if (i[1].state == element.state):
+        return i[1].value
+    None
+
   def update(self, element):
-    self.remove(element)
-    self.put(element)
+    oldValue = self.valueOf(element)
+    newValue = element.value
+    if (oldValue == None): put(element)
+    if (oldValue < newValue):
+      self.remove(element)
+      self.put(element)
   
   def put(self, element):
     super(PriorityQueue, self).put((-element.value, element))
@@ -97,14 +108,72 @@ class PriorityQueue(Queue.PriorityQueue, object):
   def addList(self, list):
     for i in list:
       self.update(i)
-# def valueInQueue(queue, element):
-#   for i in list(queue.queue):
-#       if (i.state == element.state): return True
-      
+
+
+# class LifoQueue(Queue.LifoQueue, object):
+#   """docstring for LifoQueue"""
+#   def __init__(self):
+#     super(LifoQueue, self).__init__()
+
+#   def remove(self, element):
+#     stored = []
+#     while(True):
+#       latest = self.get()
+#       if (latest == None): break
+#       if (latest.state == element.state): break
+#       stored.append(latest)
+
+#     for i in stored:
+#       self.put(i)
+
+#   def has(self, element):
+#     for i in self.queue:
+#       if (isinstance(element, Node)):
+#         if(i[1].state == element.state): return True
+#       elif (isinstance(element, basestring)):
+#         if (i[1].state == element): return True
+#     return False
+
+#   def valueOf(self, element):
+#     for i in self.queue:
+#       if (i[1].state == element.state):
+#         return i[1].value
+#     None
+
+#   def update(self, element):
+#     oldValue = self.valueOf(element)
+#     newValue = element.value
+#     if (oldValue == None): put(element)
+#     if (oldValue < newValue):
+#       self.remove(element)
+#       self.put(element)
   
-#   return False
+#   def put(self, element):
+#     super(LifoQueue, self).put((-element.value, element))
 
-# def valueInQue
-# def replaceInQueue(queue, element):
-#   for i in list(queue.queue):
+#   def get(self):
+#     if (not self.empty()): return self.getValue()[1]
+#     else: return None
 
+#   def getValue(self):
+#     return super(LifoQueue, self).get()
+
+#   def printQueue(self):
+#     for i in self.getList():
+#       i.printState()
+
+#   def getList(self):
+#     list = []
+#     for i in self.queue:
+#       list.append(i[1])
+#     list.sort(key = lambda x: -x.value)
+#     return list
+
+#   def peek(self):
+#     x = self.get()
+#     self.put(x)
+#     return x
+
+#   def addList(self, list):
+#     for i in list:
+#       self.update(i)
