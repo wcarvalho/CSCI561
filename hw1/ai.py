@@ -130,7 +130,7 @@ class AI(object):
       if (child.value < node.value): node.value = child.value
 
   def bestChild(self, node, traversal, maxDepth, depth):
-    self.game.turn = depth % 2
+    self.game.nextTurn()
     if (maxDepth == depth):
       self.addToMinTraversal(traversal, node)
       return node.value
@@ -144,28 +144,30 @@ class AI(object):
     if (end):
       for child in children:
         child.depth = depth + 1
-        self.game.turn = (depth % 2) + 1
+        self.game.nextTurn()
         self.addToMinTraversal(traversal, node)
         if (node.value == -INFINITY): node.value = child.value
         else: self.childComparison(max, node, child)
+
+        self.game.previousTurn()
         self.addToMinTraversal(traversal, child)
+      self.game.previousTurn()
       return node.value
 
     # if you're at an earlier node, you find the best child value
     for child in children:
       self.addToMinTraversal(traversal, node)
-      self.game.turn = (depth % 2) + 1
+      self.game.nextTurn()
       child.value = self.bestChild(child, traversal, maxDepth, depth + 1)
+      self.game.previousTurn()
       self.childComparison(max, node, child)
       self.addToMinTraversal(traversal, child)
 
+    self.game.previousTurn()
     return node.value
 
   def addToMinTraversal(self, traversal, node):
     traversal.append(type(node)(node, node.value, node.position, node.depth))
-
-  def addToPruneTraversal(self, traversal, node, alpha, beta):
-    traversal.append(type(node)(node, node.value, node.position, node.depth), alpha, beta)
 
   def minimax(self, state, maxDepth=1):
     if (maxDepth == 0): return Node(state)
@@ -185,58 +187,144 @@ class AI(object):
  
     return sorted(children, key = lambda x: -x.value)[0], traversal
 
-  def pruneExplore(self, node, traversal, alpha, beta maxDepth, depth):
-    self.game.turn = depth % 2
-    if (maxDepth == depth):
-      self.addToMinTraversal(traversal, node)
-      return node.value
-    
-    node.value = -INFINITY
+  def addToPruneTraversal(self, traversal, node):
+    # print(node.getPruneState())
+    traversal.append(type(node)(node, node.value, node.position, node.depth, type(node.ab)(node.ab)))
+
+  def pruneExplore(self, node, traversal, maxDepth, depth):
+    self.game.nextTurn()
+
+    currentIsMax = (depth % 2) == 0
+    childIsMax = not currentIsMax
+
+    if(currentIsMax): node.value = node.alpha()
+    else: node.value = node.beta()
     node.depth = depth
-    max = (depth % 2) == 0
+
     children = self.expand(node)
+
     # if you're at node right before the leaves, return min/max or child
     end = (depth + 1 == maxDepth) or self.terminal(children[0])
     if (end):
+      # print('end')
+      self.game.previousTurn()
+      return self.pruneExploreLeaves(node, children, traversal, depth) 
+
+    else:
+      # initialize non leaf children
       for child in children:
-        child.depth = depth + 1
-        self.game.turn = (depth % 2) + 1
-        self.addToMinTraversal(traversal, node)
-        if (node.value == -INFINITY): node.value = child.value
-        else: self.childComparison(max, node, child)
-        self.addToMinTraversal(traversal, child)
-      return node.value
+        if (childIsMax): child.value = node.beta()
+        else: child.value = node.alpha()
 
-    # if you're at an earlier node, you find the best child value
-    for child in children:
-      self.addToMinTraversal(traversal, node)
-      self.game.turn = (depth % 2) + 1
-      child.value = self.bestChild(child, traversal, maxDepth, depth + 1)
-      self.childComparison(max, node, child)
-      self.addToMinTraversal(traversal, child)
+      # parse children
+      for child in children:
+        if (currentIsMax):
+          if (node.value > node.beta()): break
+        else:
+          if (node.value < node.alpha()): break
 
+        passab(node, child)
+        value = self.pruneExplore(node, traversal, maxDepth, depth)
+
+        # propogate maximum or minimum values up from leaf
+        if(currentIsMax): alphaUpdate(value, node, child)
+        else: betaUpdate(value, node, child)
+
+    self.game.previousTurn()
     return node.value
+
+  def pruneExploreLeaves(self, node, children, traversal, parentDepth):
+
+    parentIsMax = (parentDepth%2) == 0
+
+    self.addToPruneTraversal(traversal, node)
+    
+    for i in range(len(children)):
+      child = children[i]
+      if (i > 0):
+        if (parentIsMax):
+          if(node.value > node.beta()): break
+          if (node.value > node.alpha()):
+            node.setAlpha(node.value)
+        else:
+          if(node.value < node.alpha()): break
+          if (node.value < node.beta()):
+            node.setBeta(node.value)
+        self.addToPruneTraversal(traversal, node)
+      
+      passab(node, child)
+      child.depth = parentDepth + 1
+
+      if (parentIsMax):
+        if (child.value > node.alpha()):
+          node.value = child.value
+      else: 
+        if (child.value < node.beta()):
+          node.value = child.value
+
+      self.addToPruneTraversal(traversal, child)
+    self.addToPruneTraversal(traversal, node)
+    return node.value
+
   def prune(self, state, maxDepth=1):
     if (maxDepth == 0): return Node(state)
+
     traversal = []
+    root = Node(state)
+    children = self.expand(root)
+    ab = [-INFINITY, INFINITY]
 
-    start = Node(state)
-    alpha = -INFINITY
-    INFINITY
-    self.addToMinTraversal(traversal, start, alpha, beta)
-    max = True
-
-    children = self.expand(start)
+    # DEPTH 1
     for child in children:
+      self.addToPruneTraversal(traversal, root)
 
+      if (root.value > root.beta()): break
+
+      passab(root, child)
+      value = self.pruneExplore(child, traversal, maxDepth, 1)
+      alphaUpdate(value, root, child)
+
+    self.addToPruneTraversal(traversal, root)
+
+    return sorted(children, key = lambda x: -x.value)[0], traversal
 
   def simulate(self):
     game = self.game
     startingTurn = game.turn
-    self.maxDepth = 3
+    self.maxDepth = 2
+
     # best, traversal = self.minimax(game.getState(),self.maxDepth)
     # best = self.bestFirst(game.getState(),self.maxDepth)
-
+    best, traversal = self.prune(game.getState(), self.maxDepth)
+    string = getPruneTraversalString(traversal)
+    # print string
     # for i in traversal:
-      # print(i.position, i.depth, i.value)
+    #   node = i
+    #   # print(node.position, node.depth, node.value)
+    #   print(node.position, node.depth, node.value, node.ab)
+    # for i in traversal:
+    #   node = i[0]
+    #   print(node.position, node.depth, node.value, i[1], i[2])
     # printPath(best)
+
+def passab(node, child):
+  child.ab[0] = node.ab[0]
+  child.ab[1] = node.ab[1]
+
+def betaUpdate(value, node, child):
+  if (value > child.value): child.value = value
+  if (child.value > node.value): node.value = child.value
+  if (node.value > node.alpha()): node.setAlpha(node.value)
+
+def alphaUpdate(value, node, child):
+  if (value > child.value): child.value = value
+  if (child.value > node.value): node.value = child.value
+  if (node.value > node.alpha()): node.setAlpha(node.value)
+
+def getPruneTraversalString(traversal):
+  string = ""
+  for node in traversal:
+    string = node.getPruneState() + "\n"
+  return string
+
+

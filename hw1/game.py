@@ -82,6 +82,7 @@ class Game(object):
         print('')
 
   def nextTurn(self): self.turn = self.turn+1
+  def previousTurn(self): self.turn = self.turn-1
   def setTurn(self, turn): self.turn = turn
 
   def sampleMove(self, position):

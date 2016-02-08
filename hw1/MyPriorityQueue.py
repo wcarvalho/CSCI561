@@ -1,5 +1,16 @@
 import Queue
+
 INFINITY = 1e10
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+def getPos(pos):
+  if (pos[0] == -1): return "root"
+  return LETTERS[pos[1]] + str(pos[0]+1)
+
+def intStr(val):
+  if (val == -INFINITY): return "-Infinity"
+  elif (val == INFINITY): return "Infinity"
+  else: return str(val)
 
 def printPath(node):
   q = Queue.LifoQueue()
@@ -12,12 +23,13 @@ def printPath(node):
     q.get().printState("\t")
 
 class Node(object):
-  def __init__(self, state, value=-INFINITY, position=(-1,-1), depth=0):
+  def __init__(self, state, value=-INFINITY, position=(-1,-1), depth=0, alpha =-INFINITY, beta=INFINITY):
     self.state = state
     self.position = position
     self.value = value
     self.depth = depth
     self.parent = None
+    self.ab = [alpha, beta]
 
   def printState(self, arg=""):
     if (len(arg) > 0):
@@ -25,10 +37,22 @@ class Node(object):
     else:
       print(self.getState())
 
-  def getState(self):
-    end = ", v="+str(self.value) + ", p="+str(self.position) + ", d=" + str(self.depth)
-    return self.state + end
+  def getPos(self):
+    if (self.position[0] == -1): return "root"
+    return LETTERS[self.position[1]] + str(self.position[0]+1)
 
+  def getState(self):
+    end = ", v="+str(self.value) + ", d=" + str(self.depth)
+    return self.getPos() + ": " + self.state + end
+
+  def getPruneState(self):
+    alpha = self.ab[0]
+    beta = self.ab[1]
+    return self.getMinimaxState() + "," + intStr(alpha) + "," + intStr(beta)
+
+  def getMinimaxState(self):
+    return self.getPos() + "," + str(self.depth) + "," + intStr(self.value)
+  
   def __str__(self):
     return self.state;
 
@@ -40,6 +64,11 @@ class Node(object):
 
   def setParent(self, parent):
     self.parent = parent
+
+  def alpha(self): return self.ab[0]
+  def beta(self): return self.ab[1]
+  def setAlpha(self, val): self.ab[0] = val
+  def setBeta(self, val): self.ab[1] = val
 
 class PriorityQueue(Queue.PriorityQueue, object):
   """docstring for PriorityQueue"""
