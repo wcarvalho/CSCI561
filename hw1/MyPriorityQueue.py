@@ -22,6 +22,22 @@ def printPath(node):
   while (not q.empty()):
     q.get().printState("\t")
 
+def getBoardFromState(ai, state):
+  originalState = ai.game.getState()
+  ai.game.setState(state)
+  string = ai.game.board.getBoard()
+  ai.game.setState(originalState)
+  return string
+
+def getNextFromPath(node):
+  if (node.parent == None): return node
+  while (True):
+    last = node
+    node = node.parent
+    if (node.parent == None): return last
+
+
+
 class Node(object):
   def __init__(self, state, value=-INFINITY, position=(-1,-1), depth=0, alpha =-INFINITY, beta=INFINITY):
     self.state = state

@@ -4,14 +4,16 @@ from MyPriorityQueue import *
 INFINITY = 1e10
 
 class AI(object):
-  def __init__(self, data, aglorithm, verbosity):
+  def __init__(self, data, verbosity):
     self.game = Game(data)
-    self.maxDepth = 1
-    # self.explored = set()
-    # self.frontier = PriorityQueue()
-    self.aglorithm = aglorithm
+    self.data = data
+    self.task = int(data[0])
     self.verbosity = verbosity
 
+  def setTurnState(self, turn, state):
+    self.game.setTurn(turn)
+    self.game.setState(state)
+  
   def expand(self, expand, watch=False):
     game = self.game
     board = game.board
@@ -132,10 +134,9 @@ class AI(object):
   def bestChild(self, node, traversal, maxDepth, depth):
     self.game.nextTurn()
     if (maxDepth == depth):
-      self.addToMinTraversal(traversal, node)
       return node.value
     
-    node.value = -INFINITY
+    node.value = INFINITY
     node.depth = depth
     max = (depth % 2) == 0
     children = self.expand(node)
@@ -165,7 +166,6 @@ class AI(object):
 
     self.game.previousTurn()
     return node.value
-
   def addToMinTraversal(self, traversal, node):
     traversal.append(node.getMinimaxState())
 
@@ -264,27 +264,41 @@ class AI(object):
 
     return sorted(children, key = lambda x: -x.value)[0], traversal
 
-  def simulate(self):
+  def normalSetup(self):
     game = self.game
     startingTurn = game.turn
     startingState = game.getState()
-    self.maxDepth = 2
-    # print('Node,Depth,Value,Alpha,Beta')
-    # best = self.bestFirst(game.getState(),self.maxDepth)
+    self.startingPlayer = self.data[1]
+    self.maxDepth = int(self.data[2])
+    return game, startingTurn, startingState
+
+  def task1(self):
+    game, startingTurn, startingState = self.normalSetup()
+    best = self.bestFirst(game.getState(),self.maxDepth)
+    self.setTurnState(startingTurn, startingState)
+    return best
+
+  def task2(self):
+    game, startingTurn, startingState = self.normalSetup()
     best, traversal = self.minimax(game.getState(),self.maxDepth)
-    string = getTraversalString(traversal)
-    print string
-    # print('------------')
-    # game.setTurn(startingTurn)
-    # game.setState(startingState)
-    # print(game.getState())
-    # best, traversal = self.prune(game.getState(), self.maxDepth)
-    # string = getTraversalString(traversal)
-    # game.setState(best)
-    # game.board.printBoard()
-    # print(best)
-    # print string
-    
+    self.setTurnState(startingTurn, startingState)
+    string = 'Node,Depth,Value\n' + getTraversalString(traversal)
+    return best, string
+  
+  def task3(self):
+    game, startingTurn, startingState = self.normalSetup()
+    best, traversal = self.prune(game.getState(), self.maxDepth)
+    self.setTurnState(startingTurn, startingState)
+    string = 'Node,Depth,Value,Alpha,Beta\n' + getTraversalString(traversal)
+    return best, string
+  
+  def task4(self):
+    print("task4")
+    game = self.game
+    startingTurn = game.turn
+    startingState = game.getState()
+    return None
+
 def passab(node, child):
   child.ab[0] = node.ab[0]
   child.ab[1] = node.ab[1]
@@ -302,7 +316,6 @@ def pruneBranchPass(node, isMax, traversal):
   return False
 
 def addToPruneTraversal(traversal, node):
-  print(node.getPruneState())
   traversal.append(node.getPruneState())
 
 def betaUpdate(value, node, child):

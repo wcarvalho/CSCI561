@@ -35,9 +35,16 @@ class Board(object):
 
   def printOpen(self): print("board open:", self.openPositions)
 
-  def printBoard(self):
+  def getBoard(self):
+    string=""
     for row in self.positions:
-      print("".join(row))
+      string = string + "".join(row) + "\n"
+    return string
+
+  def printBoard(self):
+    print(self.getBoard())
+    # for row in self.positions:
+    #   print("".join(row))
 
   def getState(self):
     state = ""
