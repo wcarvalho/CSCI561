@@ -67,9 +67,10 @@ class Node(object):
 
   def alpha(self): return self.ab[0]
   def beta(self): return self.ab[1]
+
   def setAlpha(self, val): self.ab[0] = val
   def setBeta(self, val): self.ab[1] = val
-
+  
 class PriorityQueue(Queue.PriorityQueue, object):
   """docstring for PriorityQueue"""
   def __init__(self):
