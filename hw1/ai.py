@@ -10,12 +10,14 @@ class AI(object):
     self.data = data
     self.task = int(data[0])
     self.verbosity = verbosity
+    self.watch = False
+    self.who = 1
 
   def setTurnState(self, turn, state):
     self.game.setTurn(turn)
     self.game.setState(state)
   
-  def expand(self, expand, watch=False):
+  def expand(self, expand):
     game = self.game
     board = game.board
     game.setState(expand)
@@ -28,7 +30,8 @@ class AI(object):
     if (self.verbosity > 2): expand.printState(game.currentPlayer().which)
     for move in availableMoves:
       game.sampleMove(move)
-      if (watch): value = game.evaluateBoard(cpi)
+      if (self.watch): 
+        value = game.evaluateBoard(self.who)
       else: value = game.evaluateBoard(1)
       state = Node(game.getState(), value, move)
       if (self.verbosity > 2): state.printState("\t->")
@@ -187,7 +190,7 @@ class AI(object):
     
     if (maxDepth == 0 or self.game.done()):
       self.addToMinTraversal(traversal, start)
-      start.value = self.game.evaluateBoard(1)
+      start.value = self.game.evaluateBoard(self.who)
       self.addToMinTraversal(traversal, start)
       return start, traversal
 
@@ -288,7 +291,7 @@ class AI(object):
     
     if (maxDepth == 0 or self.game.done()): 
       addToPruneTraversal(traversal, root)
-      root.value = self.game.evaluateBoard(1)
+      root.value = self.game.evaluateBoard(self.who)
       alphaUpdate(root.value, root, root)
       addToPruneTraversal(traversal, root)
       return root, traversal
@@ -340,6 +343,7 @@ class AI(object):
 
   def task4(self):
     game = self.game
+    self.watch = True
     startingTurn = game.turn
     startingState = game.getState()
     
@@ -352,24 +356,20 @@ class AI(object):
     player2Depth = int(self.data[6])
 
     traversal = ""
-    # game.board.printBoard()
-    # print()
     while (not game.done()):
+
+      self.who = 1
       player1Move = self.pickMove(player1Algo, player1Depth)
       game.setState(player1Move)
       game.nextTurn()
       traversal = traversal + game.board.getBoard() + "\r\n"
-      # game.board.printBoard()
-      # print()
       if (game.done()): break
-      
+
+      self.who = 2
       player2Move = self.pickMove(player2Algo, player2Depth)
       game.setState(player2Move)
       game.nextTurn()
       traversal = traversal + game.board.getBoard() + "\r\n"
-      # game.board.printBoard()
-      # print()
-      # if (game.turn > 2): break
 
     return traversal
 
