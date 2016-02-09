@@ -38,13 +38,17 @@ class Board(object):
   def getBoard(self):
     string=""
     for row in self.positions:
-      string = string + "".join(row) + "\n"
+      string = string + "".join(row) + "\r\n"
     return string
 
-  def printBoard(self):
-    print(self.getBoard())
-    # for row in self.positions:
-    #   print("".join(row))
+  def printBoard(self, board=None):
+    if (board == None):
+      print(self.getBoard())
+    else:
+      starting = self.getState()
+      self.setState(board)
+      self.printBoard()
+      self.setState(starting)
 
   def getState(self):
     state = ""
