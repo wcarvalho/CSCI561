@@ -1,5 +1,6 @@
 from game import *
 from MyPriorityQueue import *
+import sys
 
 INFINITY = 1e10
 
@@ -81,7 +82,6 @@ class AI(object):
           if (self.verbosity > 1): child.printState("\t->")
 
       
-      if (self.verbosity > 1): print('best path:')
       if (self.verbosity > 1): printPath(frontier.peek())
       self.game.nextTurn()
 
@@ -181,6 +181,7 @@ class AI(object):
     traversal.append(node.getMinimaxState())
 
   def minimax(self, state, maxDepth=1):
+    # print('minimax', maxDepth)
     traversal = []
     start = Node(state)
     
@@ -201,8 +202,10 @@ class AI(object):
       self.addToMinTraversal(traversal, child)
 
     self.addToMinTraversal(traversal, start)
- 
-    return sorted(children, key = lambda x: -x.value)[0], traversal
+    best = sorted(children, key = lambda x: -x.value)[0]
+    # best.printState()
+    # print(traversal[len(traversal)-1])
+    return best, traversal
 
   def pruneExplore(self, node, traversal, maxDepth, depth):
 
@@ -279,6 +282,7 @@ class AI(object):
       else: betaUpdate(value, node, child)
 
   def prune(self, state, maxDepth=1):
+    # print('prune')
     root = Node(state)
     traversal = []
     
@@ -326,18 +330,48 @@ class AI(object):
     string = 'Node,Depth,Value,Alpha,Beta\r\n' + getTraversalString(traversal)
     return best, string
   
+  def pickMove(self, algorith, maxDepth):
+    if (algorith == 1): 
+      return getNextFromPath(self.bestFirst(self.game.getState(), maxDepth))
+    elif (algorith == 2): 
+      return self.minimax(self.game.getState(), maxDepth)[0]
+    elif (algorith == 3): 
+      return self.prune(self.game.getState(), maxDepth)[0]
+
   def task4(self):
     game = self.game
     startingTurn = game.turn
     startingState = game.getState()
+    
     player1 = self.data[1]
     player1Algo = int(self.data[2])
-    player2Depth = int(self.data[3])
-    player2 = self.data[4]
-    player1Algo = int(self.data[5])
-    player3Depth = int(self.data[6])
+    player1Depth = int(self.data[3])
     
-    return None
+    player2 = self.data[4]
+    player2Algo = int(self.data[5])
+    player2Depth = int(self.data[6])
+
+    traversal = ""
+    # game.board.printBoard()
+    # print()
+    while (not game.done()):
+      player1Move = self.pickMove(player1Algo, player1Depth)
+      game.setState(player1Move)
+      game.nextTurn()
+      traversal = traversal + game.board.getBoard() + "\r\n"
+      # game.board.printBoard()
+      # print()
+      if (game.done()): break
+      
+      player2Move = self.pickMove(player2Algo, player2Depth)
+      game.setState(player2Move)
+      game.nextTurn()
+      traversal = traversal + game.board.getBoard() + "\r\n"
+      # game.board.printBoard()
+      # print()
+      # if (game.turn > 2): break
+
+    return traversal
 
 def passab(node, child):
   child.ab[0] = node.ab[0]

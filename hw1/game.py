@@ -1,24 +1,30 @@
 from board import *
 from player import *
+import sys
 
 class Game(object):
-  def __init__(self, data):
+  def __init__(self, data, start=3):
     self.task = int(data[0])
     self.turn = 0
     
     if (self.task < 4): 
-      self.setupSinglePlayer(data)
+      self.setupSinglePlayer(data, start)
     else: 
       self.setupMultiPlayer(data)
     
-  def setupSinglePlayer(self, data):
-    self.board = Board(data,3)
+  def setupSinglePlayer(self, data, start):
+    self.board = Board(data,start)
     self.players = [ Player(self.board, "X"), Player(self.board, "O")]
     if (data[1] == "O"): self.players.reverse()
     
 
   def setupMultiPlayer(self, data):
+    
     self.board = Board(data,7)
+    self.players = [ Player(self.board, data[1]), Player(self.board, data[4])]
+    if (self.players[0].which == self.players[1].which):
+      print("Error: must choose opposing players")
+      sys.exit(0)
 
   def evaluateBoard(self, which): 
     player = self.players[(which - 1 )% 2]

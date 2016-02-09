@@ -37,8 +37,12 @@ class Board(object):
 
   def getBoard(self):
     string=""
-    for row in self.positions:
-      string = string + "".join(row) + "\r\n"
+    for i in range(len(self.positions)):
+      row=self.positions[i]
+      if (i < len(self.positions)-1):
+        string = string + "".join(row) + "\r\n"
+      else:
+        string = string + "".join(row)
     return string
 
   def printBoard(self, board=None):
