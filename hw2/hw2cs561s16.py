@@ -20,17 +20,19 @@ clauses = data[2:2+nClauses]
 kb = KnowledgeBase()
 
 kb.add(clauses)
-subs = kb.ask(query)
 
-q = Sentence(query)
-original = Sentence(query)
+kb.ask(query)
+# subs = kb.ask(query)
 
-q.applySubs(subs)
-# print(q.sentence + " vs. " + original.sentence)
-if q.known and q.sentence == original.sentence:
-  print True
-else:
-  print False
+# q = Sentence(query)
+# original = Sentence(query)
+
+# q.applySubs(subs)
+# # print(q.sentence + " vs. " + original.sentence)
+# if q.known and q.sentence == original.sentence:
+#   print True
+# else:
+#   print False
 
 # kb.add()
 

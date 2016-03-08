@@ -1,5 +1,24 @@
 import re
 from atomic import *
+import sys
+
+def unknown(x):
+  if len(x) == 1: return True
+  else: return False
+
+def getUnknownSubs(args1, args2):
+  args = len(args1)
+  subs = []
+  for i in xrange(args):
+    if unknown(args1[i]) and not unknown(args2[i]):
+      subs = subs + [(args1[i], args2[i])]
+  # positions1 = unknownPos(args1)
+  # positions2 = unknownPos(args2)
+  # if (positions1 == positions2): return []
+  # if len(positions1) > 0 and len(positions2) > 0:
+  #   return makeSubs(args1, args2, positions1)
+  # else:
+  return subs
 
 def makeSubs(arguments, possible, positions=None):
   subs=[]
@@ -20,11 +39,32 @@ def recreateImplication(key, variables, antecedent):
   sentence = sentence + variables[len(variables)-1] + ")"
   return sentence
 
+def substitute(sentence, vars, args):
+  s = Sentence(sentence)
+  subs = makeSubs(vars, args)
+  s.applySubs(subs)
+  return str(s)
 def format(query):
   sentence = Sentence(query)
   subs = [('x', '_'), ('y', '_'), ('z', '_')]
   sentence.applySubs(subs)
   return str(sentence)
+
+def incongruent(subs):
+  if (len(subs) == 0): return False
+  for s in subs:
+    if (not unknown(s[0]) and not unknown(s[1])):
+      if s[0] != s[1]: return True
+  return False
+
+def metaSub(subs1, subs2):
+  subs = subs2
+  for i in xrange(len(subs1)):
+    s1 = subs1[i]
+    for j in xrange(len(subs2)):
+      s2 = subs[j]
+      if (s1[0] == s2[0]): subs[j] = (s1[1], s2[1])
+  return subs
 
 class KnowledgeBase(object):
   def __init__(self):
@@ -42,106 +82,15 @@ class KnowledgeBase(object):
     if sentence.implication or sentence.atomic:
       key, value = sentence.keyValue()
       # print(key, value)
-      self.knowledge[key] = [value]
+      if key in self.knowledge:
+        self.knowledge[key] = self.knowledge[key] + [value]
+      else: 
+        self.knowledge[key] = [value]
+
     else:
       for t in sentence.terms:
         self.store(t)
-
-  def ask(self, query):
-    sentence = Sentence(query)
-    terms = sentence.terms
-    
-    print "Ask: " + format(query)
-    
-    true = True
-    # for when there is more than one term
-    if (len(terms) > 1 ):
-      for t in terms:
-        true = true and self.ask(t)
-      return true
-
-    # otherwise
-    a = Atomic(terms[0])
-    subs = self.search(a.pred, a.args)
-    sentence = Sentence(a.sentence)
-    sentence.applySubs(subs)
-    
-    formatted = format(str(sentence))
-    
-    newA = Atomic(sentence.terms[0])
-    if newA.known:
-      if self.check(newA.pred, newA.args) or formatted == query:
-        print "True: " + formatted
-        # return makeSubs(newA.args, newA.args)
-      # elif formatted == query:
-      else: 
-        print "False: " + formatted
-    else: 
-      print "False: " + formatted
-    
-    return subs
-    
-      # else:
-      # print "True: " + formatted
-      #   print "False: " + query
-      #   return makeSubs(a.args, len(a.args)*["x"])
-      
-    # print(subs)
-
-
-  def search(self, key, arguments):
-
-    # print('search: ' + key + " -> " + str(arguments))
-    tuples = self.knowledge[key]
-
-    i = 0
-    for possible in tuples:
-      implication = type(possible) is tuple
-      # print("implication: " + str(implication))
-      # print(possible)
-      if implication:
-        antecedent = possible[0]
-        variables = possible[1]
-        sentence = Sentence(antecedent)
-      
-        subs = []
-        for t in sentence.terms:
-          subs = subs + self.ask(t)
-        
-        fullImplication = recreateImplication(key, variables, antecedent)
-        sentence = Sentence(fullImplication)
-        sentence.applySubs(subs)
-        
-        consequent = Sentence(sentence.getConsequent())
-        consArgs = consequent.parts[0].args
-        return makeSubs(arguments, consArgs)
-
-      else:
-        if possible == None:
-          return makeSubs(arguments, ["x"]*len(arguments))
-          # return makeSubs(arguments, arguments)
-        else:
-          # print possible
-          # print arguments
-          positions = unknownPos(arguments)
-          # print positions
-          if len(positions) > 0:
-            return makeSubs(arguments, possible, positions)
-          else:
-            return makeSubs(arguments, arguments)
-            # if (self.check(key, arguments)):
-            # else:
-              # return makeSubs(arguments, ["x"]*len(arguments))
-
-        # original_arguments = arguments
-          # arguments[pos] = possible[pos]
-        # if possible == arguments: 
-          # subs=[]
-          # for pos in positions:
-      i = i + 1
-
-    return False
-
+  
   def check(self, key, arguments):
     tuples = self.knowledge[key]
 
@@ -149,3 +98,122 @@ class KnowledgeBase(object):
       if possible == arguments: return True
 
     return False
+
+  def search(self, key, arguments):
+    tuples = self.knowledge[key]
+    # print('')
+    # print(len(tuples), tuples)
+    # print('Search: ' + key + " -> " + str(arguments))
+
+    subs = []
+    i = 0
+    for possible in tuples:
+      implication = type(possible) is tuple
+      # print str(i) + ": possibility: " + str(possible)
+
+      if implication:
+        antecedent = possible[0]
+        variables = possible[1]
+
+        if (i > 0): 
+          fi = Sentence(recreateImplication(key, arguments, antecedent))
+          consequent = fi.getConsequent()
+          print "Ask: " + format(consequent)
+        
+        initialSubs =  makeSubs(variables, arguments)
+
+        ant = Sentence(antecedent)
+        ant.subUnknown(initialSubs)
+
+        unknownSubs = getUnknownSubs(arguments, variables)
+        subs = [] + unknownSubs
+
+        original = str(ant)
+        # print("unknown subs: " + str(unknownSubs))
+        for i in xrange(len(ant.terms)):
+          atom = Atomic(ant.terms[i])
+          interSubs = self.ask(ant.terms[i])
+          ant.applySubs(interSubs)
+          # print("\t" + str(i) + ": " + str(interSubs))
+          if atom.known and incongruent(interSubs): 
+            print('incongruent')
+            break
+          subs = subs + interSubs
+          
+
+        if (original == str(ant)):
+          return subs
+
+        if (ant.known and not incongruent(subs)):
+          print('returning')
+          return subs
+
+      # Predicate
+      else:
+        # print( possible)
+        if possible == None:
+          subs = makeSubs(arguments, ["x"]*len(arguments))
+
+        elif possible == arguments:
+          subs = makeSubs(possible, arguments)
+        
+        else:
+          positions = unknownPos(arguments)
+          if len(positions) > 0:
+            subs = makeSubs(arguments, possible, positions)
+          else:
+            # print 'none'
+            subs = []
+            subs = makeSubs(arguments, possible)
+        
+      i = i + 1
+        # print(subs)
+
+    return subs
+
+  def ask(self, query):
+
+    sentence = Sentence(query)
+    terms = sentence.terms
+    atomic = len(terms) is 1
+
+    formatted = format(str(sentence))
+    print "Ask: " + formatted
+    
+    # if (sentence.known):
+      # print 'checking'
+    # else:
+      # print('searching')
+
+    if atomic:
+      atom = Atomic(terms[0])
+
+      if (sentence.known):
+        if self.check(atom.pred, atom.args):
+          print "True: " + formatted
+          return makeSubs(atom.args, atom.args)
+        else:
+          substitutions = self.search(atom.pred, atom.args)
+          newSentence = Sentence(atom.sentence)
+          newSentence.applySubs(substitutions)
+          # print('substitutions1: ' + str(substitutions))
+          if (str(newSentence) == atom.sentence):
+            print ("True: " + format(str(atom.sentence)))
+            return substitutions
+          else: 
+            print ("False: " + format(str(atom.sentence)))
+            return substitutions
+      else:
+        substitutions = self.search(atom.pred, atom.args)
+        newSentence = Sentence(atom.sentence)
+        newSentence.applySubs(substitutions)
+        print('substitutions2: ' + str(substitutions))
+        print ("True: " + format(str(newSentence)))
+        # self.add(str(newSentence))
+        return substitutions
+
+
+
+    else:
+      print("Haven't completed for multiple terms!")
+      sys.exit(0)

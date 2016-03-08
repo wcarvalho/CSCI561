@@ -14,7 +14,7 @@ def getPredicate(x):
 def unknownPos(arguments):
   positions = []
   for i in xrange(len(arguments)):
-    if arguments[i] is 'x' or arguments[i] is 'y' or arguments[i] is 'z':
+    if len(arguments[i]) == 1:
       positions.append(i)
   return positions
 
@@ -109,6 +109,13 @@ class Sentence(object):
         self.terms[i] = replaceArgument(self.terms[i], s[0], s[1])
     self.updateSentence()
 
+  def subUnknown(self, subs):
+    for i in xrange(len(self.terms)):
+      for s in subs:
+        if len(s[0]) == 1:
+          self.terms[i] = replaceArgument(self.terms[i], s[0], s[1])
+          
+    self.updateSentence()
 
   def __str__(self):
     return self.sentence
