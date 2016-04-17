@@ -18,15 +18,35 @@ def unknownPos(arguments):
       positions.append(i)
   return positions
 
+def sameKnown(args1, args2, positions):
+  if (len(args1) != len(args2)): return False
+  if (len(args1) == 0): return True
+  for p in positions:
+    if args1[p] != args2[p]: return False
+  return True
+
+def lastReversedSub(subs):
+  if len(subs) == 0: return []
+  last = subs[len(subs)-1]
+  last = (last[1], last[0])
+  return [last]
+
+def allButLastSub(subs):
+  if len(subs) <= 1: return []
+  return subs[0: len(subs)-1]
+
+def knownPos(arguments):
+  positions = []
+  for i in xrange(len(arguments)):
+    if len(arguments[i]) > 1:
+      positions.append(i)
+  return positions
+
 def hasUnknown(x):
   unknown = False
   for i in x:
-    if (len(i) > 1): pass
-    X=i.find('x') is not -1
-    Y=i.find('y') is not -1
-    Z=i.find('z') is not -1
-    unknown = unknown or (X or Y or Z)
-  return unknown
+    if (len(i) == 1): return True
+  return False
 
 def getArguments(x):
   l = x.find('(')+1
@@ -40,11 +60,7 @@ def getArguments(x):
 def replaceArgument(term, x, y):
   l = term.find('(')+1
   u = term.find(')')
-  # print ("term", term)
-  # print ("x", x)
-  # print ("y", y)
   return term[0:l] + term[l:u].replace(x, y) + term[u:len(term)]
-
 
 class Atomic(object):
   def __init__(self, sentence):
@@ -52,6 +68,44 @@ class Atomic(object):
     self.pred = getPredicate(self.sentence)
     self.args = getArguments(self.sentence)
     self.known = not hasUnknown(self.args)
+
+  def subInArgs(self, sub):
+    for a in self.args:
+      if (sub[1] == a):
+        return True
+    return False
+
+  def adjustSubs(self, subs):
+    for i in xrange(len(subs)):
+      s = subs[i]
+      if self.subInArgs(s):
+        temp = (s[0], s[1]+"1")
+        # subs[i] = temp
+        # print('would have changed: ' + str(s) +" into " + str(temp))
+
+  def applySubs(self, subs):
+    self.adjustSubs(subs)
+    for s in subs:
+      for i in xrange(len(self.args)):
+        a = self.args[i]
+        if (a == s[0]): self.args[i] = s[1]
+    self.update()
+
+  def applySubsUnknown(self, subs):
+    self.adjustSubs(subs)
+    for s in subs:
+      for i in xrange(len(self.args)):
+        a = self.args[i]
+        if (a == s[0] and len(s[0]) == 1):
+          self.args[i] = s[1]
+    self.update()
+
+  def update(self):
+    nargs = len(self.args)
+    self.sentence = self.pred + "("
+    for i in xrange(nargs-1):
+      self.sentence = self.sentence + self.args[i] + ","
+    self.sentence = self.sentence + self.args[nargs-1] + ")"
 
 class Sentence(object):
   def __init__(self, sentence):
@@ -62,7 +116,7 @@ class Sentence(object):
     self.ops = getOperators(self.sentence)
     self.parts = []
     self.terms = getTerms(self.sentence)
-    
+    self.variables = self.getVariables()
     for t in self.terms:
       self.parts.append(Atomic(t))
     
@@ -72,6 +126,13 @@ class Sentence(object):
 
     self.implication = self.sentence.find("=>") is not -1
     self.atomic = len(self.terms) is 1
+
+  def getVariables(self):
+    variables = set()
+    for p in self.parts:
+      for a in p.args:
+        variables.add(a)
+    return variables
 
   def getConsequent(self):
     return self.sentence.split("=>")[1]
@@ -104,21 +165,28 @@ class Sentence(object):
     self.extractSentence(sentence)
 
   def applySubs(self, subs):
-    for i in xrange(len(self.terms)):
-      for s in subs:
-        self.terms[i] = replaceArgument(self.terms[i], s[0], s[1])
+    for i in xrange(len(self.parts)):
+      p = self.parts[i]
+      p.applySubs(subs)
+      self.terms[i] = p.sentence
     self.updateSentence()
 
   def subUnknown(self, subs):
+    for i in xrange(len(self.parts)):
+      p = self.parts[i]
+      p.applySubsUnknown(subs)
+      self.terms[i] = p.sentence
+    self.updateSentence()
+
+  def cleanUnknown(self):
     for i in xrange(len(self.terms)):
-      for s in subs:
-        if len(s[0]) == 1:
-          self.terms[i] = replaceArgument(self.terms[i], s[0], s[1])
-          
+      t = self.terms[i]
+      args = getArguments(t)
+      for a in args:
+        if (len(a) == 1):
+          self.terms[i]= replaceArgument(self.terms[i], a, "_")
     self.updateSentence()
 
   def __str__(self):
     return self.sentence
-    # print sentence
-    # print arguments
-    # p
+    

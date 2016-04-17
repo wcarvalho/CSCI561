@@ -4,7 +4,7 @@ from knowledgeBase import *
 from atomic import *
 parser = argparse.ArgumentParser(description='CSCI 561 HW2')
 parser.add_argument('-i', '--input', type=file, help='input file')
-parser.add_argument("-v", '--verbosity', type=int, default=1)
+parser.add_argument("-v", '--verbosity', type=int, default=0)
 args = parser.parse_args()
 
 input = args.input
@@ -17,31 +17,39 @@ query = data[0]
 nClauses = int(data[1])
 clauses = data[2:2+nClauses]
 
-kb = KnowledgeBase()
+kb = KnowledgeBase(verbosity)
 
 kb.add(clauses)
+kb.replicate()
 
-kb.ask(query)
-# subs = kb.ask(query)
+if (verbosity > 0):
+  kb.show()
+  print("\n"*3)
 
-# q = Sentence(query)
-# original = Sentence(query)
+# sys.exit(1)
+substitutions = kb.ask(query)
 
-# q.applySubs(subs)
-# # print(q.sentence + " vs. " + original.sentence)
-# if q.known and q.sentence == original.sentence:
-#   print True
-# else:
-#   print False
+q = Sentence(query)
+if not q.known: q.applySubs(substitutions)
 
-# kb.add()
+# kb.show()
 
-# test = clauses[1]
+true = True
+for t in q.terms:
+  atom = Atomic(t)
+  if not kb.check(atom.pred, atom.args):
+    true = False
+    break
 
-# s = Sentence(test)
-# print(s.sentence, map(s.atomic)
-# y = [1,2, 10]
-# map(lambda x: print(x), y)
-# test
+output = kb.getChain()
 
-# kb.parse(clauses[0])
+if true:
+  output = output + "True"
+else:
+  output = output + "False"
+
+inputFile = input.name
+prefix = inputFile[inputFile.find("/")+1:inputFile.find(".txt")]
+
+with open("output.txt", "w") as text_file:
+    text_file.write(output)
