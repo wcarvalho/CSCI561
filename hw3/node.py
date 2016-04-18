@@ -40,6 +40,8 @@ class Node(object):
     for i in xrange(len(parents)):
       self.argumentMap[parents[i]] = i+1
       self.ordered_args.append(parents[i])
+    if (len(parents) > 0):
+      self.ordered_args = [self.ordered_args[0]] + sorted(self.ordered_args[1:])
 
   def keyLength(self): return len(self.parents)+1
   def defineProperties(self, info):
@@ -59,11 +61,6 @@ class Node(object):
           value1 = float(value1)
           key2, value2 = getCompliment(key1, value1)
           self.P[tuple(key2)] = value2
-          # print "\t" + str(key2) + " : " + str(value2)
-        
-    
-        # print "\t" + str(key1) + " : " + str(value1)
-      # print "\t",n
 
   def addParent(self, parent):
     self.parents[parent.name] = parent
@@ -73,18 +70,12 @@ class Node(object):
   def getValue(self, arguments):
     key = [True]*self.keyLength()
 
-    # print
-    # print self.name
-    # print arguments
-    # print "node", self.argumentMap
-    # print key
     for i in self.argumentMap:
       indx = self.argumentMap[i]
       key[indx] = arguments[i]
 
     value = self.P[tuple(key)]
 
-    # print "key", key, value
     return value
 
   def listD(self, dictionary):

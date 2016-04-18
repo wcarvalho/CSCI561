@@ -151,9 +151,7 @@ class Calculator(object):
         qp.setArguments(i)
         pr = self.probability(qp.str)
         prob = prob * pr
-        # print "self.prob", pr
-        # print prob
-        # print type(prob), type(pr)
+      self.pp(str(i),0)
       self.pp(str(chain)+ "=" + str(prob),0)
       sum = sum + prob
     return sum
@@ -184,7 +182,9 @@ class Calculator(object):
       uq.setArguments(i)
       self.pp(q2.str + "*" + uq.str, 0)
       p = self.probability(q2.str)
+      self.pp("\t\tP = " + str(p),0)
       v = self.network.getValue(uq, self.l)
+      self.pp("\t\tU = " + str(v),0)
       sum = sum + p*v
       self.pp(q2.str + "*" + uq.str + " = " + str(p*v), 0)
 

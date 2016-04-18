@@ -23,6 +23,7 @@ def seperateNodeInfo(data):
 def arrayToIOString(array):
   str = ""
   lasti = len(array)-1
+  if lasti <0: return ""
   for i in array[:lasti]:
     str = str + i + "\n"
   str = str + array[lasti]

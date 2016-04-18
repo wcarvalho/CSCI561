@@ -20,12 +20,22 @@ class Network(object):
     return self.nodes[name].parents.keys()
   def getValue(self, query, level):
     qargs = query.args
+
     for i in self.nodes:
       node = self.nodes[i]
       nargs = node.ordered_args
-      if self.v > 1: print "\t"*level + "node_args", nargs
-      if self.v > 1: print "\t"*level + "q_args", qargs
       
+      if query.conditional:
+        pre, post = query.getPrePost()
+        qargs = pre + sorted(post)
+      else:
+        nargs = sorted(nargs)
+        qargs = sorted(qargs)
+
+      if self.v > 1: print "\t"*level + i+"_n_args", nargs
+      if self.v > 1: print "\t"*level + i+"_q_args", qargs
+      
+
       if nargs == qargs: 
         if self.v > 1: print "\t"*(level+1) + "MATCH"
         return node.getValue(query.arguments)
